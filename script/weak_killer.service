@@ -1,0 +1,13 @@
+[Unit]
+Description=python weak killer
+After=syslog.target
+
+[Service]
+Type=simple
+ExecStart=/opt/weak_killer/script/service.sh
+# ExecReload=target_dir/restart.sh
+# ExecStop=target_dir/shutdown.sh
+SuccessExitStatus=0
+
+[Install]
+WantedBy=multi-user.target
