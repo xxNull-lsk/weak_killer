@@ -68,7 +68,7 @@ class BlackList:
                 ip_info["record"].append(record)
             else:
                 self.data[ip] = {
-                    "count": 0,
+                    "count": 1,
                     "datetime": [now],
                     "record": [record]
                 }
@@ -109,11 +109,16 @@ class BlackList:
 
         # 解禁初犯的IP，有可能是输入错误导致的
         for ip in self.data.keys():
-            if self.data[ip]["count"] < self.max_times:
-                last_datetime = self.data[ip]["datetime"][-1]
-                dt = datetime.datetime.now() - datetime.datetime.strptime(last_datetime, "%Y-%m-%d %H:%M:%S")
-                if dt.total_seconds() > self.every_time_black_seconds * self.data[ip]["count"]:
-                    self._remove_from_black_list(ip)
+            # 如果超出容忍次数，不再解禁
+            if self.data[ip]["count"] >= self.max_times:
+                continue
+            # 如果低于封锁时间，也不解禁
+            last_datetime = self.data[ip]["datetime"][-1]
+            dt = datetime.datetime.now() - datetime.datetime.strptime(last_datetime, "%Y-%m-%d %H:%M:%S")
+            # 封锁时间根据封锁次数累加
+            if dt.total_seconds() <= self.every_time_black_seconds * self.data[ip]["count"]:
+                continue
+            self._remove_from_black_list(ip)
 
     def save(self):
         if not os.path.exists(self.folder):
