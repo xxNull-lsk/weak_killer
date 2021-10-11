@@ -31,12 +31,12 @@ def get_local_user_info(name):
     return False, None
 
 
-class BlackList:
+class SSHBlackList:
     max_times = 3           # 最大容忍次数，不包含
     every_time_black_seconds = 60   # 每次最大封禁时间，单位：秒
     data = {}
     folder = "/var/weak_killer"
-    filename = "black_list.json"
+    filename = "ssh_black_list.json"
 
     def __init__(self):
         self.load()

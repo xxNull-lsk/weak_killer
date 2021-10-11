@@ -2,7 +2,7 @@
 import os
 import time
 
-from src.user import BlackList
+from src.SSHBlackList import SSHBlackList
 import logging
 import logging.config
 import traceback
@@ -13,13 +13,13 @@ def main():
     os.environ["TZ"] = 'Asia/Shanghai'
     time.tzset()
     logging.info('started.')
-    bl = BlackList()
+    bl = SSHBlackList()
     while True:
         try:
             bl.reinforce()
         except Exception as err:
             logging.critical(
-                "exception in reinforce_user, {}:\n{}".format(
+                "exception in ssh black list reinforce, {}:\n{}".format(
                     err,
                     traceback.format_exc()
                 )
