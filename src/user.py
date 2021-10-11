@@ -41,67 +41,70 @@ class BlackList:
     def __init__(self):
         self.load()
 
-    def add(self, ip, user):
+    def add(self, ip, user, record):
         # 本地IP不能加入黑名单。
         if ip == "127.0.0.1":
             return
+
         # 如果登陆的是本地用户不加入黑名单。
         is_local_user, info = get_local_user_info(user)
         if is_local_user and info["uid"] >= 1000:
             return
 
         # 如果已经在黑名单中，不重复加入
-        if self.is_in_black_list(ip):
+        if self.is_in_black_list(ip, record):
             return
 
-        self._add_to_black_list(ip)
+        self._add_to_black_list(ip, record)
         self.save()
 
-    def _add_to_black_list(self, ip):
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if ip in self.data.keys():
-            ip_info = self.data[ip]
-            ip_info["count"] += 1
-            ip_info["datetime"].append(now)
-        else:
-            self.data[ip] = {
-                "count": 0,
-                "datetime": [now]
-            }
-        logging.log(logging.WARN, "Add {} to black list".format(ip))
+    def _add_to_black_list(self, ip, record=None):
+        if record is not None:
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            if ip in self.data.keys():
+                ip_info = self.data[ip]
+                ip_info["count"] += 1
+                ip_info["datetime"].append(now)
+                ip_info["record"].append(record)
+            else:
+                self.data[ip] = {
+                    "count": 0,
+                    "datetime": [now],
+                    "record": [record]
+                }
+        logging.log(logging.INFO, "Add {} to iptables".format(ip))
         os.system("iptables -I INPUT -s {} -j DROP".format(ip))
 
-    def is_in_black_list(self, ip):
+    def is_in_black_list(self, ip, record):
+        if ip in self.data.keys() and record in self.data[ip]["record"]:
+            return True
         # 如果已经在黑名单中，不重复加入
-        ret = os.system("iptables -L -n | grep {} | grep DROP".format(ip))
+        ret = os.system("iptables -L -n | grep {} | grep DROP | grep all".format(ip))
         if ret == 0:
             if ip in self.data.keys():
                 return True
         return False
 
-    def _remove_from_black_list(self, ip):
-        filename = "/tmp/weak_killer_{}.log".format(os.getpid())
-        ret = os.system("iptables -L -n --line-numbers|grep {} | grep DROP|grep all > {}".format(ip, filename))
-        if ret == 0:
-            if ip in self.data.keys():
-                return
-        with open(filename, "r") as f:
-            for line in f.readlines():
-                # 1    DROP       all  --  0.0.0.0/0            0.0.0.0/0
-                logging.info("remove {} for ip".format(line, ip))
-                os.system("iptables -D INPUT -s {} -j DROP".format(ip))
+    @staticmethod
+    def _remove_from_black_list(ip):
+        cmd = "iptables -L -n --line-numbers | grep {} | grep DROP | grep all".format(ip)
+        r = os.popen(cmd)
+        for line in r.readlines():
+            # 1    DROP       all  --  0.0.0.0/0            0.0.0.0/0
+            logging.info("Remove {} from iptables, record: {}".format(line, ip))
+            os.system("iptables -D INPUT -s {} -j DROP".format(ip))
+        r.close()
 
     def reinforce(self):
         filename = "/tmp/weak_killer_{}.log".format(os.getpid())
         try:
-            os.system("lastb -xF|head > {}".format(filename))
-
-            with open(filename, "r") as f:
+            cmd = "lastb -xF | head"
+            with os.popen(cmd) as f:
                 for line in f.readlines():
                     items = line.split()
                     user = items[0]
                     ip = items[2]
-                    self.add(ip, user)
+                    self.add(ip, user, line)
         except Exception as err:
             logging.critical("{} {}".format(err, traceback.format_exc()))
         finally:
