@@ -51,8 +51,8 @@ class BlackList:
         if is_local_user and info["uid"] >= 1000:
             return
 
-        # 如果已经在黑名单中，不重复加入
-        if self.is_in_black_list(ip, record):
+        # 如果已经处理过的记录或者已经在黑名单，不重复处理
+        if self.is_in_record(ip, record) or self.is_in_iptables(ip):
             return
 
         self._add_to_black_list(ip, record)
@@ -72,21 +72,31 @@ class BlackList:
                     "datetime": [now],
                     "record": [record]
                 }
-        logging.log(logging.INFO, "Add {} to iptables".format(ip))
-        os.system("iptables -I INPUT -s {} -j DROP".format(ip))
+        ret = self.add_to_iptables(ip)
+        logging.log(logging.INFO, "Add {} to iptables, ret={}".format(ip, ret))
+        return ret
 
-    def is_in_black_list(self, ip, record):
+    def is_in_record(self, ip, record):
         if ip in self.data.keys() and record in self.data[ip]["record"]:
             return True
-        # 如果已经在黑名单中，不重复加入
-        ret = os.system("iptables -L -n | grep {} | grep DROP | grep all".format(ip))
-        if ret == 0:
-            if ip in self.data.keys():
-                return True
         return False
 
     @staticmethod
-    def _remove_from_black_list(ip):
+    def add_to_iptables(ip):
+        ret = os.system("iptables -I INPUT -s {} -j DROP".format(ip))
+        if ret == 0:
+            return True
+        return False
+
+    @staticmethod
+    def is_in_iptables(ip):
+        ret = os.system("iptables -L -n | grep {} | grep DROP | grep all".format(ip))
+        if ret == 0:
+            return True
+        return False
+
+    @staticmethod
+    def _remove_from_iptables(ip):
         cmd = "iptables -L -n --line-numbers | grep {} | grep DROP | grep all".format(ip)
         r = os.popen(cmd)
         for line in r.readlines():
@@ -118,7 +128,7 @@ class BlackList:
             # 封锁时间根据封锁次数累加
             if dt.total_seconds() <= self.every_time_black_seconds * self.data[ip]["count"]:
                 continue
-            self._remove_from_black_list(ip)
+            self._remove_from_iptables(ip)
 
     def save(self):
         if not os.path.exists(self.folder):
