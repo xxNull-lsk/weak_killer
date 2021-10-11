@@ -2,7 +2,22 @@
 
 保护服务器避免被暴力攻破。
 
+## 安装方法
 
+```bash
+cd script
+sudo bash ./install.sh
+```
+
+安装目录：`/opt/weak_killer`
+
+安装后默认开机自动启动。
+
+# 服务管理
+
+启动服务：`systemctl start weak_killer`
+
+停止服务：`systemctl stop weak_killer`
 
 # SSH加固
 
