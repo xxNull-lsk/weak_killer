@@ -96,7 +96,6 @@ class BlackList:
         r.close()
 
     def reinforce(self):
-        filename = "/tmp/weak_killer_{}.log".format(os.getpid())
         try:
             cmd = "lastb -xF | head"
             with os.popen(cmd) as f:
@@ -107,8 +106,6 @@ class BlackList:
                     self.add(ip, user, line)
         except Exception as err:
             logging.critical("{} {}".format(err, traceback.format_exc()))
-        finally:
-            os.remove(filename)
 
         # 解禁初犯的IP，有可能是输入错误导致的
         for ip in self.data.keys():
