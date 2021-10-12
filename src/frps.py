@@ -1,51 +1,22 @@
 import datetime
-import json
 import os
 import logging
 import traceback
-import iptables
+
+from src import iptables
 from src.BlackList import BlackList
 
-
-def get_local_user_info(name):
-    with open("/etc/passwd", "r") as f:
-        for line in f.readlines():
-            items = line.split(":")
-            if name != items[0]:
-                continue
-            # 0: user name
-            # 1: user type?
-            # 2: uid
-            # 3: gid
-            # 4: disc
-            # 5: home path
-            # 6: shell
-            info = {
-                "name": items[0],
-                "uid": int(items[2]),
-                "gid": int(items[3]),
-                "desc": items[4],
-                "home": items[5],
-                "shell": items[6]
-            }
-            return True, info
-
-    return False, None
+log_filename = "/var/log/frps/frps_raspi4b.log"
 
 
-class SSHBlackList(BlackList):
+class FrpsBlackList(BlackList):
 
     def __init__(self):
-        super().__init__("ssh_black_list.json")
+        super().__init__("frps_black_list.json")
 
-    def add(self, ip, user, record):
+    def add(self, ip, record):
         # 本地IP不能加入黑名单。
         if ip == "127.0.0.1":
-            return
-
-        # 如果登陆的是本地用户不加入黑名单。
-        is_local_user, info = get_local_user_info(user)
-        if is_local_user and info["uid"] >= 1000:
             return
 
         # 如果已经处理过的记录或者已经在黑名单，不重复处理
@@ -56,14 +27,32 @@ class SSHBlackList(BlackList):
         self.save()
 
     def reinforce(self):
+        if not os.path.exists(log_filename):
+            return
+        records = {}
         try:
-            cmd = "lastb -xF | head"
-            with os.popen(cmd) as f:
+            with open(log_filename, "r+") as f:
                 for line in f.readlines():
+                    if "get a user connection" not in line:
+                        continue
                     items = line.split()
-                    user = items[0]
-                    ip = items[2]
-                    self.add(ip, user, line)
+                    action_time = items[1]
+                    address = items[-1]
+                    ip = address.split(":")[0]
+                    ip = ip.replace('[', '')
+                    if ip in records.keys():
+                        last_time = records[ip]["date"][-1]
+                        last_time = datetime.datetime.strptime(last_time, "%H:%M:%S")
+                        records[ip]["date"].append(action_time)
+                        action_time = datetime.datetime.strptime(action_time, "%H:%M:%S")
+                        if (action_time - last_time).total_seconds() < 3 or\
+                                len(records[ip]["date"]) >= 30:
+                            self.add(ip, line)
+                    else:
+                        records[ip] = {
+                            "date": [action_time],
+                            "record": [line]
+                        }
         except Exception as err:
             logging.critical("{} {}".format(err, traceback.format_exc()))
 
