@@ -1,9 +1,8 @@
 import datetime
-import json
 import os
 import logging
 import traceback
-import iptables
+from src import iptables
 from src.BlackList import BlackList
 
 
