@@ -12,6 +12,7 @@ class BlackList:
     folder = "/var/weak_killer"
     max_times = 3           # 最大容忍次数，不包含
     every_time_black_seconds = 60   # 每次最大封禁时间，单位：秒
+    cfg = {}
 
     def __init__(self, filename):
         self.filename = filename
@@ -24,6 +25,7 @@ class BlackList:
             data = {
                 "max_times": self.max_times,
                 "every_time_black_seconds": self.every_time_black_seconds,
+                "cfg": self.cfg,
                 "data": self.data
             }
             f.write(json.dumps(data, indent=4, ensure_ascii=False))
@@ -39,6 +41,8 @@ class BlackList:
                 data = json.loads(txt)
                 if "data" in data:
                     self.data = data["data"]
+                if "cfg" in data:
+                    self.cfg = data["cfg"]
                 if "max_times" in data:
                     self.max_times = data["max_times"]
                 if "every_time_black_seconds" in data:

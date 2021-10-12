@@ -6,12 +6,13 @@ import traceback
 from src import iptables
 from src.BlackList import BlackList
 
-log_filename = "/var/log/frps/frps_raspi4b.log"
-
 
 class FrpsBlackList(BlackList):
 
     def __init__(self):
+        self.cfg["log_filename"] = "/var/log/frps/frps_raspi4b.log"
+        self.cfg["max_connection_count"] = 30
+        self.cfg["tick_seconds"] = 3
         super().__init__("frps_black_list.json")
 
     def add(self, ip, record):
@@ -27,11 +28,11 @@ class FrpsBlackList(BlackList):
         self.save()
 
     def reinforce(self):
-        if not os.path.exists(log_filename):
+        if not os.path.exists(self.cfg["log_filename"]):
             return
         records = {}
         try:
-            with open(log_filename, "r") as f:
+            with open(self.cfg["log_filename"], "r") as f:
                 for line in f.readlines():
                     if "get a user connection" not in line:
                         continue
@@ -45,8 +46,8 @@ class FrpsBlackList(BlackList):
                         last_time = datetime.datetime.strptime(last_time, "%H:%M:%S")
                         records[ip]["date"].append(action_time)
                         action_time = datetime.datetime.strptime(action_time, "%H:%M:%S")
-                        if (action_time - last_time).total_seconds() < 3 or\
-                                len(records[ip]["date"]) >= 30:
+                        if (action_time - last_time).total_seconds() < self.cfg["tick_seconds"] or\
+                                len(records[ip]["date"]) >= self.cfg["max_connection_count"]:
                             self.add(ip, line)
                     else:
                         records[ip] = {
