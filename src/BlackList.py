@@ -31,6 +31,7 @@ class BlackList:
     def load(self):
         full_filename = os.path.join(self.folder, self.filename)
         if not os.path.exists(full_filename):
+            self.save()
             return
         try:
             with open(full_filename, "r") as f:

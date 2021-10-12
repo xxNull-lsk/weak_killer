@@ -31,7 +31,7 @@ class FrpsBlackList(BlackList):
             return
         records = {}
         try:
-            with open(log_filename, "r+") as f:
+            with open(log_filename, "r") as f:
                 for line in f.readlines():
                     if "get a user connection" not in line:
                         continue
