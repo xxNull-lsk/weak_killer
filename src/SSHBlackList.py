@@ -3,7 +3,7 @@ import os
 import logging
 import traceback
 from src import iptables
-from src.BlackList import BlackList
+from src.BlackList import BlackList, is_lan
 
 
 def get_local_user_info(name):
@@ -39,7 +39,7 @@ class SSHBlackList(BlackList):
 
     def add(self, ip, user, record):
         # 本地IP不能加入黑名单。
-        if ip == "127.0.0.1":
+        if is_lan(ip):
             return
 
         # 如果登陆的是本地用户不加入黑名单。

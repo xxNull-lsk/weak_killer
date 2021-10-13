@@ -4,7 +4,7 @@ import logging
 import traceback
 
 from src import iptables
-from src.BlackList import BlackList
+from src.BlackList import BlackList, is_lan
 
 
 class FrpsBlackList(BlackList):
@@ -17,7 +17,7 @@ class FrpsBlackList(BlackList):
 
     def add(self, ip, record):
         # 本地IP不能加入黑名单。
-        if ip == "127.0.0.1":
+        if is_lan(ip):
             return
 
         # 如果已经处理过的记录或者已经在黑名单，不重复处理

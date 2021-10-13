@@ -1,10 +1,18 @@
 import datetime
+import ipaddress
 import json
 import logging
 import os
 import traceback
 
 from src import iptables
+
+
+def is_lan(ip):
+    try:
+        return ipaddress.ip_address(ip.strip()).is_private
+    except:
+        return False
 
 
 class BlackList:
