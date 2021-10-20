@@ -11,8 +11,9 @@ class FrpsBlackList(BlackList):
 
     def __init__(self):
         self.cfg["log_filename"] = "/var/log/frps/frps_raspi4b.log"
-        self.cfg["max_connection_count"] = 30
-        self.cfg["tick_seconds"] = 3
+        self.cfg["max_connection_count"] = 50
+        self.cfg["tick_seconds"] = 2
+        self.cfg["min_count"] = 10
         super().__init__("frps_black_list.json")
 
     def add(self, ip, record):
@@ -46,13 +47,16 @@ class FrpsBlackList(BlackList):
                         last_time = datetime.datetime.strptime(last_time, "%H:%M:%S")
                         records[ip]["date"].append(action_time)
                         action_time = datetime.datetime.strptime(action_time, "%H:%M:%S")
-                        if (action_time - last_time).total_seconds() < self.cfg["tick_seconds"] or\
-                                len(records[ip]["date"]) >= self.cfg["max_connection_count"]:
+                        records[ip]["sec"] += (action_time - last_time).total_seconds()
+                        count = len(records[ip]["date"])
+                        if (count > self.cfg["min_count"] and records[ip]["sec"] / count < self.cfg["tick_seconds"]) or\
+                                count >= self.cfg["max_connection_count"]:
                             self.add(ip, line)
                     else:
                         records[ip] = {
                             "date": [action_time],
-                            "record": [line]
+                            "record": [line],
+                            "sec": 0
                         }
         except Exception as err:
             logging.critical("{} {}".format(err, traceback.format_exc()))
