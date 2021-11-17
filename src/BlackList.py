@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import traceback
-
+import requests
 from src import iptables
 
 
@@ -13,6 +13,11 @@ def is_lan(ip):
         return ipaddress.ip_address(ip.strip()).is_private
     except:
         return False
+
+
+def get_ip_address(ip):
+    response = requests.get("http://apis.juhe.cn/ip/ipNewV3?ip={}&key=929125b83940756c670b461ead4f1615".format(ip))
+    return response.json()
 
 
 class BlackList:
@@ -47,6 +52,7 @@ class BlackList:
             with open(full_filename, "r") as f:
                 txt = f.read()
                 data = json.loads(txt)
+
                 if "data" in data:
                     self.data = data["data"]
                 if "cfg" in data:
@@ -57,12 +63,19 @@ class BlackList:
                     self.every_time_black_seconds = data["every_time_black_seconds"]
                     if self.every_time_black_seconds < 0:
                         self.every_time_black_seconds = 1
+
         except Exception as err:
             logging.critical("load black list failed!{}\n{}".format(err, traceback.format_exc()))
 
+        changed = False
         for ip in self.data.keys():
+            if "address" not in self.data[ip].keys() or self.data[ip]["address"]["resultcode"] != "200":
+                self.data[ip]["address"] = get_ip_address(ip)
+                changed = True
             if self.data[ip]["count"] >= self.max_times:
                 self._add_to_black_list(ip)
+        if changed:
+            self.save()
 
     def _add_to_black_list(self, ip, record=None):
         if record is not None:
@@ -76,7 +89,8 @@ class BlackList:
                 self.data[ip] = {
                     "count": 1,
                     "datetime": [now],
-                    "record": [record]
+                    "record": [record],
+                    "address": get_ip_address(ip)
                 }
         ret = iptables.add(ip)
         logging.log(logging.INFO, "Add {} to iptables, ret={}".format(ip, ret))
