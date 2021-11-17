@@ -37,6 +37,8 @@ class FrpsBlackList(BlackList):
                 for line in f.readlines():
                     if "get a user connection" not in line:
                         continue
+                    if "ssh" not in line and "vnc" not in line and "rdp" not in line:
+                        continue
                     items = line.split()
                     action_time = items[1]
                     address = items[-1]

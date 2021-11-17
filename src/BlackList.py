@@ -57,6 +57,8 @@ class BlackList:
                     self.data = data["data"]
                 if "cfg" in data:
                     self.cfg = data["cfg"]
+                    if "skip" in self.cfg:
+                        self.cfg["skip"] = []
                 if "max_times" in data:
                     self.max_times = data["max_times"]
                 if "every_time_black_seconds" in data:
@@ -72,6 +74,9 @@ class BlackList:
             if "address" not in self.data[ip].keys() or self.data[ip]["address"]["resultcode"] != "200":
                 self.data[ip]["address"] = get_ip_address(ip)
                 changed = True
+            address = self.data[ip]["address"]
+            if "result" in address and address["result"]["Province"] in self.cfg['skip']:
+                continue
             if self.data[ip]["count"] >= self.max_times:
                 self._add_to_black_list(ip)
         if changed:
@@ -86,11 +91,14 @@ class BlackList:
                 ip_info["datetime"].append(now)
                 ip_info["record"].append(record)
             else:
+                address = get_ip_address(ip)
+                if "result" in address and address["result"]["Province"] in self.cfg['skip']:
+                    return False
                 self.data[ip] = {
                     "count": 1,
                     "datetime": [now],
                     "record": [record],
-                    "address": get_ip_address(ip)
+                    "address": address
                 }
         ret = iptables.add(ip)
         logging.log(logging.INFO, "Add {} to iptables, ret={}".format(ip, ret))
