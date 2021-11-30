@@ -16,8 +16,59 @@ def is_lan(ip):
 
 
 def get_ip_address(ip):
-    response = requests.get("http://apis.juhe.cn/ip/ipNewV3?ip={}&key=929125b83940756c670b461ead4f1615".format(ip))
-    return response.json()
+    try:
+        response = requests.get("http://ip-api.com/json/{}?lang=zh-CN".format(ip))
+        response = response.json()
+        if response['status'] == 'success':
+            result = {
+                "resultcode": "200",
+                "reason": "查询成功",
+                "error_code": 0,
+                "result": {
+                    "Country": response['country'],
+                    "Province": response['regionName'],
+                    "City": response['city'],
+                    "District": response['org'],
+                    "Isp": response['isp']
+                }
+            }
+            return result
+    except Exception as err:
+        logging.critical("get ip from ip-api.com failed!{}\n{}".format(err, traceback.format_exc()))
+
+    try:
+        response = requests.get("http://apis.juhe.cn/ip/ipNewV3?ip={}&key=929125b83940756c670b461ead4f1615".
+                                format(ip)).json()
+        if response["resultcode"] == "200" and response["error_code"] == 0:
+            return response
+    except Exception as err:
+        logging.critical("get ip from juhe.cn failed!{}\n{}".format(err, traceback.format_exc()))
+
+    try:
+        response = requests.get("https://ip.taobao.com/outGetIpInfo?ip={}".format(ip)).json()
+        if response['code'] == 0:
+            data = response['data']
+            result = {
+                "resultcode": "200",
+                "reason": "查询成功",
+                "error_code": 0,
+                "result": {
+                    "Country": data['country'],
+                    "Province": data['region'],
+                    "City": data['city'],
+                    "District": data['area'],
+                    "Isp": data['isp']
+                }
+            }
+            return result
+    except Exception as err:
+        logging.critical("get ip from ip.taobao.com failed!{}\n{}".format(err, traceback.format_exc()))
+
+    return {
+        "resultcode": "500",
+        "reason": "查询失败",
+        "error_code": 1
+    }
 
 
 class BlackList:
@@ -92,8 +143,9 @@ class BlackList:
                 ip_info["record"].append(record)
             else:
                 address = get_ip_address(ip)
-                if "result" in address and address["result"]["Province"] in self.cfg['skip']:
-                    return False
+                if "result" in address and address["result"]["Province"]:
+                    if "Province" in address["result"] and address["result"]["Province"] in self.cfg['skip']:
+                        return False
                 self.data[ip] = {
                     "count": 1,
                     "datetime": [now],
