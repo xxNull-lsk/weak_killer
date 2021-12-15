@@ -138,7 +138,7 @@ class BlackList:
                     self._add_to_black_list(ip)
 
             except Exception as err:
-                logging.critical("load black list failed!{}\n{}".format(err, traceback.format_exc()))
+                logging.critical("load black {} failed!{}\n{}".format(ip, err, traceback.format_exc()))
         if changed:
             self.save()
 
