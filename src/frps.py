@@ -8,6 +8,7 @@ from src.BlackList import BlackList, is_lan
 
 
 class FrpsBlackList(BlackList):
+    last_count = 0
 
     def __init__(self):
         self.cfg["log_filename"] = "/var/log/frps/frps_raspi4b.log"
@@ -34,7 +35,10 @@ class FrpsBlackList(BlackList):
         records = {}
         try:
             with open(self.cfg["log_filename"], "r") as f:
-                for line in f.readlines():
+                for index, line in enumerate(f.readlines()):
+                    if index < self.last_count:
+                        continue
+                    self.last_count = index
                     if "get a user connection" not in line:
                         continue
                     if "ssh" not in line and "vnc" not in line and "rdp" not in line:
@@ -51,7 +55,7 @@ class FrpsBlackList(BlackList):
                         action_time = datetime.datetime.strptime(action_time, "%H:%M:%S")
                         records[ip]["sec"] += (action_time - last_time).total_seconds()
                         count = len(records[ip]["date"])
-                        if (count > self.cfg["min_count"] and records[ip]["sec"] / count < self.cfg["tick_seconds"]) or\
+                        if (count > self.cfg["min_count"] and records[ip]["sec"] / count < self.cfg["tick_seconds"]) or \
                                 count >= self.cfg["max_connection_count"]:
                             self.add(ip, line)
                     else:

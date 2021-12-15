@@ -33,6 +33,7 @@ def get_local_user_info(name):
 
 
 class SSHBlackList(BlackList):
+    last_count = 0
 
     def __init__(self):
         super().__init__("ssh_black_list.json")
@@ -58,7 +59,10 @@ class SSHBlackList(BlackList):
         try:
             cmd = "lastb -xF | head"
             with os.popen(cmd) as f:
-                for line in f.readlines():
+                for index, line in enumerate(f.readlines()):
+                    if index < self.last_count:
+                        continue
+                    self.last_count = index
                     items = line.split()
                     user = items[0]
                     ip = items[2]

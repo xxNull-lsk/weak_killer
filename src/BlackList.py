@@ -108,7 +108,7 @@ class BlackList:
                     self.data = data["data"]
                 if "cfg" in data:
                     self.cfg = data["cfg"]
-                    if "skip" in self.cfg:
+                    if "skip" not in self.cfg:
                         self.cfg["skip"] = []
                 if "max_times" in data:
                     self.max_times = data["max_times"]
@@ -141,6 +141,11 @@ class BlackList:
                 ip_info["count"] += 1
                 ip_info["datetime"].append(now)
                 ip_info["record"].append(record)
+                if 'webhook_url' in self.cfg:
+                    param = self.data[ip]["address"]["result"]
+                    param['ip'] = ip
+                    url = self.cfg["webhook_url"].format(**param)
+                    requests.get(url)
             else:
                 address = get_ip_address(ip)
                 if "result" in address and address["result"]["Province"]:
@@ -152,8 +157,17 @@ class BlackList:
                     "record": [record],
                     "address": address
                 }
+                if 'webhook_url' in self.cfg:
+                    param = address["result"]
+                    param['ip'] = ip
+                    url = self.cfg["webhook_url"].format(**param)
+                    requests.get(url)
         ret = iptables.add(ip)
-        logging.log(logging.INFO, "Add {} to iptables, ret={}".format(ip, ret))
+        logging.log(logging.INFO, "Add {} to iptables, ret={}, address={}".format(
+            ip,
+            ret,
+            json.dumps(self.data[ip]["address"])
+        ))
         return ret
 
     def is_in_record(self, ip, record):
