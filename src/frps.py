@@ -15,7 +15,7 @@ class FrpsBlackList(BlackList):
         self.cfg["max_connection_count"] = 50
         self.cfg["tick_seconds"] = 2
         self.cfg["min_count"] = 10
-        super().__init__("frps_black_list.json")
+        super().__init__("frps_black_list.json", "frps")
 
     def add(self, ip, record):
         # 本地IP不能加入黑名单。

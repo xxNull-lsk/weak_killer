@@ -36,7 +36,7 @@ class SSHBlackList(BlackList):
     last_count = 0
 
     def __init__(self):
-        super().__init__("ssh_black_list.json")
+        super().__init__("ssh_black_list.json", "ssh")
 
     def add(self, ip, user, record):
         # 本地IP不能加入黑名单。

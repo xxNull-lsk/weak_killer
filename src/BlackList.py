@@ -78,8 +78,9 @@ class BlackList:
     every_time_black_seconds = 60   # 每次最大封禁时间，单位：秒
     cfg = {}
 
-    def __init__(self, filename):
+    def __init__(self, filename, type):
         self.filename = filename
+        self.type = type
         self.load()
 
     def save(self):
@@ -162,13 +163,15 @@ class BlackList:
                 if 'webhook_url' in self.cfg:
                     param = address["result"]
                     param['ip'] = ip
+                    param['type'] = self.type
                     url = self.cfg["webhook_url"].format(**param)
                     requests.get(url)
         ret = iptables.add(ip)
-        logging.log(logging.INFO, "Add {} to iptables, ret={}, address={}".format(
+        logging.log(logging.INFO, "Add {} to iptables from {}, ret={}, address={}".format(
             ip,
+            self.type,
             ret,
-            json.dumps(self.data[ip]["address"], ensure_ascii=False)
+            json.dumps(self.data[ip]["address"]["result"], ensure_ascii=False)
         ))
         return ret
 
