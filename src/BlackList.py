@@ -168,7 +168,7 @@ class BlackList:
         logging.log(logging.INFO, "Add {} to iptables, ret={}, address={}".format(
             ip,
             ret,
-            json.dumps(self.data[ip]["address"])
+            json.dumps(self.data[ip]["address"], ensure_ascii=False)
         ))
         return ret
 
