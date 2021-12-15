@@ -148,8 +148,10 @@ class BlackList:
                     requests.get(url)
             else:
                 address = get_ip_address(ip)
-                if "result" in address and address["result"]["Province"]:
-                    if "Province" in address["result"] and address["result"]["Province"] in self.cfg['skip']:
+                if "result" in address and address["result"]:
+                    result = address["result"]
+                    if ("Province" in result and result["Province"] in self.cfg['skip']) or\
+                            ("City" in result and result["City"] in self.cfg['skip']):
                         return False
                 self.data[ip] = {
                     "count": 1,
