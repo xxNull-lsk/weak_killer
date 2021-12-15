@@ -78,9 +78,9 @@ class BlackList:
     every_time_black_seconds = 60   # 每次最大封禁时间，单位：秒
     cfg = {}
 
-    def __init__(self, filename, type):
+    def __init__(self, filename, type_name):
         self.filename = filename
-        self.type = type
+        self.type = type_name
         self.load()
 
     def save(self):
@@ -96,6 +96,7 @@ class BlackList:
             f.write(json.dumps(data, indent=4, ensure_ascii=False))
 
     def load(self):
+        logging.info("load {}".format(self.filename))
         full_filename = os.path.join(self.folder, self.filename)
         if not os.path.exists(full_filename):
             self.save()
@@ -123,14 +124,21 @@ class BlackList:
 
         changed = False
         for ip in self.data.keys():
-            if "address" not in self.data[ip].keys() or self.data[ip]["address"]["resultcode"] != "200":
-                self.data[ip]["address"] = get_ip_address(ip)
-                changed = True
-            address = self.data[ip]["address"]
-            if "result" in address and address["result"]["Province"] in self.cfg['skip']:
-                continue
-            if self.data[ip]["count"] >= self.max_times:
-                self._add_to_black_list(ip)
+            try:
+                if "address" not in self.data[ip].keys() or self.data[ip]["address"]["resultcode"] != "200":
+                    self.data[ip]["address"] = get_ip_address(ip)
+                    changed = True
+                address = self.data[ip]["address"]
+                if "result" in address and address["result"]:
+                    result = address["result"]
+                    if ("Province" in result and result["Province"] in self.cfg['skip']) or\
+                            ("City" in result and result["City"] in self.cfg['skip']):
+                        continue
+                if self.data[ip]["count"] >= self.max_times:
+                    self._add_to_black_list(ip)
+
+            except Exception as err:
+                logging.critical("load black list failed!{}\n{}".format(err, traceback.format_exc()))
         if changed:
             self.save()
 
