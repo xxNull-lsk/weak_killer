@@ -1,3 +1,4 @@
+import copy
 import datetime
 import ipaddress
 import json
@@ -153,7 +154,7 @@ class BlackList:
                 ip_info["record"].append(record)
                 if 'webhook_url' in self.cfg:
                     try:
-                        param = self.data[ip]["address"]["result"]
+                        param = copy.copy(self.data[ip]["address"]["result"])
                         param['ip'] = ip
                         param['type'] = self.type
                         url = self.cfg["webhook_url"].format(**param)
