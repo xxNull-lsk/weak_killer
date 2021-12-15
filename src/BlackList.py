@@ -152,10 +152,14 @@ class BlackList:
                 ip_info["datetime"].append(now)
                 ip_info["record"].append(record)
                 if 'webhook_url' in self.cfg:
-                    param = self.data[ip]["address"]["result"]
-                    param['ip'] = ip
-                    url = self.cfg["webhook_url"].format(**param)
-                    requests.get(url)
+                    try:
+                        param = self.data[ip]["address"]["result"]
+                        param['ip'] = ip
+                        param['type'] = self.type
+                        url = self.cfg["webhook_url"].format(**param)
+                        requests.get(url)
+                    except:
+                        pass
             else:
                 address = get_ip_address(ip)
                 if "result" in address and address["result"]:
