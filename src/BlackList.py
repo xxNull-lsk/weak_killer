@@ -11,7 +11,8 @@ from src import iptables
 def is_lan(ip):
     try:
         return ipaddress.ip_address(ip.strip()).is_private
-    except:
+    except Exception as err:
+        logging.critical("get ip({} ) type failed!{}\n{}".format(ip, err, traceback.format_exc()))
         return False
 
 

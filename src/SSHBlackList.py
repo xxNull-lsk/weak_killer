@@ -66,6 +66,9 @@ class SSHBlackList(BlackList):
                     items = line.split()
                     user = items[0]
                     ip = items[2]
+                    if "ssh" not in items[1]:
+                        user = ''
+                        ip = items[1]
                     self.add(ip, user, line)
         except Exception as err:
             logging.critical("{} {}".format(err, traceback.format_exc()))
